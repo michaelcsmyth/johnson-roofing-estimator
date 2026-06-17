@@ -343,6 +343,33 @@
     <p class="jr-tagline">Tile Roof Replacement Estimator &nbsp;·&nbsp; Mesa, Arizona</p>
   </div>
 
+  <!-- HOMEOWNER INFO -->
+  <p class="section-label">Homeowner information</p>
+  <div class="card">
+    <div class="form-grid">
+      <div class="field">
+        <label for="first-name">First name</label>
+        <input type="text" id="first-name" placeholder="e.g. John" />
+      </div>
+      <div class="field">
+        <label for="last-name">Last name</label>
+        <input type="text" id="last-name" placeholder="e.g. Smith" />
+      </div>
+      <div class="field">
+        <label for="home-age">Approx. age of home (years)</label>
+        <input type="number" id="home-age" placeholder="e.g. 15" min="0" />
+      </div>
+      <div class="field">
+        <label for="phone">Phone number</label>
+        <input type="tel" id="phone" placeholder="e.g. (480) 555-0123" />
+      </div>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" placeholder="e.g. john@email.com" />
+      </div>
+    </div>
+  </div>
+
   <!-- ADDRESS -->
   <p class="section-label">Your property</p>
   <div class="card">
@@ -394,7 +421,7 @@
 
   <!-- CUSTOMER RESULTS -->
   <div id="jr-customer-results" class="customer-result hidden">
-    <p class="customer-heading">Your roof replacement estimate</p>
+    <p class="customer-heading" id="customer-heading">Your roof replacement estimate</p>
 
     <div class="metric-grid">
       <div class="cmetric">
@@ -431,6 +458,16 @@
 
     <div id="jr-internal-panel" class="internal-panel hidden">
 
+      <p class="int-label">Homeowner</p>
+      <div class="int-metric-grid">
+        <div class="int-metric"><p class="int-metric-lbl">Name</p><p class="int-metric-val" id="r-name">—</p></div>
+        <div class="int-metric"><p class="int-metric-lbl">Phone</p><p class="int-metric-val" id="r-phone">—</p></div>
+        <div class="int-metric"><p class="int-metric-lbl">Email</p><p class="int-metric-val" id="r-email" style="font-size:13px">—</p></div>
+        <div class="int-metric"><p class="int-metric-lbl">Address</p><p class="int-metric-val" id="r-address">—</p></div>
+        <div class="int-metric"><p class="int-metric-lbl">Home age</p><p class="int-metric-val" id="r-home-age">—</p></div>
+      </div>
+
+      <hr class="divider" />
       <p class="int-label">Roof summary</p>
       <div class="int-metric-grid">
         <div class="int-metric"><p class="int-metric-lbl">Footprint</p><p class="int-metric-val" id="r-footprint">—</p></div>
@@ -488,6 +525,28 @@
         15% waste &nbsp;·&nbsp; 10% tile replacement factor &nbsp;·&nbsp;
         Disposal $250 flat &nbsp;·&nbsp; Mortar balls $25 flat
       </p>
+
+      <hr class="divider" />
+      <p class="int-label">Save this estimate</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="calc-btn" style="flex:1;min-width:160px;margin:0" onclick="saveEstimate()">
+          <i class="ti ti-device-floppy"></i>&nbsp; Save estimate
+        </button>
+        <button class="calc-btn" style="flex:1;min-width:160px;margin:0;background:var(--bg-card);color:var(--navy);border:0.5px solid var(--border-med)" onclick="exportEstimates()">
+          <i class="ti ti-download"></i>&nbsp; Export all (JSON)
+        </button>
+        <button class="calc-btn" style="flex:1;min-width:160px;margin:0;background:var(--bg-card);color:var(--navy);border:0.5px solid var(--border-med)" onclick="toggleSavedList()">
+          <i class="ti ti-list"></i>&nbsp; View saved (<span id="saved-count">0</span>)
+        </button>
+      </div>
+      <p id="save-status" class="int-source hidden" style="color:var(--navy);font-weight:600"></p>
+
+      <div id="saved-list-panel" class="hidden" style="margin-top:.75rem">
+        <table class="int-tbl">
+          <thead><tr><th>Name</th><th>Address</th><th>Sell price</th><th>Saved</th></tr></thead>
+          <tbody id="saved-list-body"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -585,6 +644,14 @@
     const perSq = Math.round(sellPrice / squares);
 
     // Customer view
+    // Personalize heading with homeowner name if provided
+    const firstName = document.getElementById('first-name').value.trim();
+    const lastName = document.getElementById('last-name').value.trim();
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
+    document.getElementById('customer-heading').textContent = fullName
+      ? `${fullName}'s roof replacement estimate`
+      : 'Your roof replacement estimate';
+
     document.getElementById('c-area').textContent = Math.round(totalArea).toLocaleString() + ' sq ft';
     document.getElementById('c-squares').textContent = squares + ' sq';
     document.getElementById('c-pitch').textContent = pitchLabel.split('(')[0].trim();
@@ -592,6 +659,17 @@
     document.getElementById('c-persq').textContent = fmt(perSq) + ' per square';
 
     // Internal view
+    // Internal view — homeowner info
+    const address = document.getElementById('address').value.trim();
+    const homeAge = document.getElementById('home-age').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+    document.getElementById('r-name').textContent = fullName || '—';
+    document.getElementById('r-phone').textContent = phone || '—';
+    document.getElementById('r-email').textContent = email || '—';
+    document.getElementById('r-address').textContent = address || '—';
+    document.getElementById('r-home-age').textContent = homeAge ? homeAge + ' yrs' : '—';
+
     document.getElementById('r-footprint').textContent = Math.round(footprint).toLocaleString() + ' sq ft';
     document.getElementById('r-area').textContent = Math.round(totalArea).toLocaleString() + ' sq ft';
     document.getElementById('r-squares').textContent = squares + ' sq';
@@ -612,7 +690,110 @@
 
     document.getElementById('jr-customer-results').classList.remove('hidden');
     document.getElementById('jr-customer-results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Store the full estimate in memory so it can be saved on demand
+    window.lastEstimate = {
+      firstName, lastName, fullName, phone, email, address, homeAge,
+      length: L, width: W, pitch: pitchLabel.split('(')[0].trim(),
+      footprintSqFt: Math.round(footprint),
+      totalAreaSqFt: Math.round(totalArea),
+      totalSquares: squares,
+      replacementSquares: replaceSq,
+      tilePallets: pallets,
+      rawMaterials: Math.round(matRaw * 100) / 100,
+      rawLabor: laborRaw,
+      sellPrice: sellPrice,
+      perSquare: perSq,
+      savedAt: new Date().toISOString()
+    };
+    document.getElementById('save-status').classList.add('hidden');
   }
+
+  // ── Local storage "database" for estimates ──────────────────────────
+  // Estimates are stored in the browser's localStorage under one key as
+  // a JSON array. This gives Johnson Roofing a working save/retrieve
+  // capability today, with a clean export path to a real database later
+  // (the exported JSON file can be imported directly into a spreadsheet
+  // or database table when that's ready).
+  const STORAGE_KEY = 'jr_estimates_v1';
+
+  function getSavedEstimates() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function setSavedEstimates(list) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    document.getElementById('saved-count').textContent = list.length;
+  }
+
+  function saveEstimate() {
+    const status = document.getElementById('save-status');
+    if (!window.lastEstimate) {
+      status.textContent = 'Calculate an estimate first before saving.';
+      status.style.color = '#dc2626';
+      status.classList.remove('hidden');
+      return;
+    }
+    const list = getSavedEstimates();
+    list.push(window.lastEstimate);
+    setSavedEstimates(list);
+    status.style.color = 'var(--navy)';
+    status.textContent = `Saved. ${list.length} estimate${list.length !== 1 ? 's' : ''} stored on this device.`;
+    status.classList.remove('hidden');
+    renderSavedList();
+  }
+
+  function exportEstimates() {
+    const list = getSavedEstimates();
+    if (list.length === 0) {
+      const status = document.getElementById('save-status');
+      status.style.color = '#dc2626';
+      status.textContent = 'No saved estimates yet to export.';
+      status.classList.remove('hidden');
+      return;
+    }
+    const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `johnson_roofing_estimates_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function renderSavedList() {
+    const list = getSavedEstimates();
+    document.getElementById('saved-count').textContent = list.length;
+    const tbody = document.getElementById('saved-list-body');
+    tbody.innerHTML = '';
+    list.slice().reverse().forEach(est => {
+      const tr = document.createElement('tr');
+      const savedDate = new Date(est.savedAt).toLocaleDateString();
+      tr.innerHTML = `<td>${est.fullName || '—'}</td><td>${est.address || '—'}</td><td>${fmt(est.sellPrice)}</td><td>${savedDate}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function toggleSavedList() {
+    const panel = document.getElementById('saved-list-panel');
+    const isHidden = panel.classList.contains('hidden');
+    if (isHidden) {
+      renderSavedList();
+      panel.classList.remove('hidden');
+    } else {
+      panel.classList.add('hidden');
+    }
+  }
+
+  // Initialize saved count on page load
+  document.getElementById('saved-count').textContent = getSavedEstimates().length;
 
   document.getElementById('length').addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
   document.getElementById('width').addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
