@@ -243,6 +243,32 @@
       margin-top: 0.6rem;
       box-shadow: var(--shadow-lg);
     }
+    .watermark { display: none; }
+
+    /* ── FULL-PAGE WATERMARK OVERLAY ────────────────────────── */
+    .wm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 500;
+      overflow: hidden;
+    }
+    .wm-overlay.visible { display: block; }
+    .wm-overlay span {
+      position: absolute;
+      bottom: 28%;
+      left: 50%;
+      transform: translateX(-50%) rotate(-35deg);
+      transform-origin: center center;
+      font-family: var(--font-body);
+      font-size: 96px;
+      font-weight: 900;
+      color: rgba(15,59,110,0.10);
+      white-space: nowrap;
+      letter-spacing: 0.10em;
+      user-select: none;
+    }
     .customer-heading {
       font-family: var(--font-display);
       font-size: 21px;
@@ -290,6 +316,55 @@
     .price-persq { position: relative; z-index: 1; color: rgba(255,255,255,0.8); font-size: 14px; margin: 10px 0 0; font-weight: 500; }
     .price-note { position: relative; z-index: 1; font-size: 12px; color: rgba(255,255,255,0.65); margin: 12px 0 0; }
 
+    .disclaimer-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #f5f8fb;
+      border: 1px solid var(--border-med);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin: 14px 0 0;
+    }
+    .disclaimer-text {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .disclaimer-btn {
+      flex-shrink: 0;
+      background: var(--navy);
+      color: #fff;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+    .disclaimer-btn:hover { background: var(--navy-dark); }
+
+    .print-btn {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      margin: 14px 0 0;
+      letter-spacing: 0.01em;
+      transition: background 0.15s ease;
+    }
+    .print-btn:hover { background: var(--navy-dark); }
+
     .cta-row {
       font-size: 13.5px;
       color: var(--text-muted);
@@ -298,6 +373,141 @@
     }
     .cta-row strong { color: var(--navy); }
     .cta-row a { color: var(--terracotta-dark); text-decoration: none; font-weight: 600; }
+
+    /* ── PASSWORD MODAL ─────────────────────────────────────── */
+    .pw-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,30,60,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .pw-modal {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      padding: 2rem 1.75rem 1.5rem;
+      width: 100%;
+      max-width: 340px;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+    }
+    .pw-modal-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--navy);
+      margin: 0 0 0.35rem;
+    }
+    .pw-modal-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0 0 1.1rem;
+    }
+    .pw-input {
+      width: 100%;
+      height: 46px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-med);
+      background: var(--bg-surface);
+      color: var(--text);
+      padding: 0 14px;
+      font-size: 18px;
+      font-family: inherit;
+      text-align: center;
+      letter-spacing: 0.2em;
+      margin-bottom: 0.65rem;
+    }
+    .pw-input:focus {
+      outline: none;
+      border-color: var(--terracotta);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(192,99,61,0.12);
+    }
+    .pw-error {
+      font-size: 12.5px;
+      color: #b3261e;
+      font-weight: 500;
+      margin: 0 0 0.65rem;
+    }
+    .pw-btn-row {
+      display: flex;
+      gap: 10px;
+    }
+    .pw-btn {
+      flex: 1;
+      padding: 11px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+    }
+    .pw-btn.primary { background: var(--terracotta); color: #fff; }
+    .pw-btn.primary:hover { background: var(--terracotta-dark); }
+    .pw-btn.cancel { background: var(--bg-surface); color: var(--text-muted); }
+    .pw-btn.cancel:hover { background: #e3effa; }
+
+    /* ── PRINT ──────────────────────────────────────────────── */
+    @media print {
+      @page { size: letter portrait; margin: 0.5in; }
+
+      body {
+        background: #fff !important;
+        padding: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* hide everything except header + results card */
+      .section-label,
+      .card,
+      .calc-btn,
+      #jr-error,
+      .internal-toggle,
+      #jr-internal-panel,
+      .print-btn,
+      .cta-row,
+      .wm-overlay,
+      .pw-overlay { display: none !important; }
+
+      /* keep header tidy */
+      .jr-header { border-radius: 8px; box-shadow: none; margin-bottom: 1rem; }
+
+      /* results card — no shadow needed on paper */
+      .customer-result { box-shadow: none; border: 1px solid #ddd; }
+
+      /* force colored boxes to print */
+      .price-box {
+        background: #C0633D !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        box-shadow: none;
+      }
+      .cmetric { background: #eef6fc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      /* hide schedule button inside disclaimer on print */
+      .disclaimer-btn { display: none !important; }
+
+      /* BALLPARK ONLY watermark for print */
+      body::after {
+        content: 'BALLPARK ONLY';
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-35deg);
+        font-family: 'Inter', Arial, sans-serif;
+        font-size: 96pt;
+        font-weight: 900;
+        color: rgba(15,59,110,0.12);
+        white-space: nowrap;
+        letter-spacing: 0.10em;
+        pointer-events: none;
+        z-index: 9999;
+      }
+    }
 
     /* ── DIVIDER ────────────────────────────────────────────── */
     .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.1rem 0; }
@@ -451,6 +661,26 @@
   </style>
 </head>
 <body>
+<!-- Full-page watermark overlay -->
+<div id="wm-overlay" class="wm-overlay">
+  <span>BALLPARK ONLY</span>
+</div>
+
+<!-- Password Modal -->
+<div id="pw-overlay" class="pw-overlay hidden">
+  <div class="pw-modal">
+    <p class="pw-modal-title">Internal Access</p>
+    <p class="pw-modal-sub">Enter the password to view the internal cost breakdown.</p>
+    <input id="pw-input" class="pw-input" type="password" placeholder="••••" maxlength="20"
+      onkeydown="if(event.key==='Enter') submitPassword()" />
+    <p id="pw-error" class="pw-error hidden">Incorrect password. Try again.</p>
+    <div class="pw-btn-row">
+      <button class="pw-btn cancel" onclick="closePasswordModal()">Cancel</button>
+      <button class="pw-btn primary" onclick="submitPassword()">Unlock</button>
+    </div>
+  </div>
+</div>
+
 <div class="page-wrap">
 
   <!-- HEADER -->
@@ -540,6 +770,15 @@
 
   <!-- CUSTOMER RESULTS -->
   <div id="jr-customer-results" class="customer-result hidden">
+    <div class="watermark">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" preserveAspectRatio="none" style="width:100%;height:100%;position:absolute;inset:0;">
+        <text x="300" y="450" text-anchor="middle" dominant-baseline="middle"
+          transform="rotate(-35 300 450)"
+          font-family="Inter, Arial, sans-serif"
+          font-size="68" font-weight="900" letter-spacing="6"
+          fill="rgba(15,59,110,0.13)">BALLPARK ONLY</text>
+      </svg>
+    </div>
     <p class="customer-heading" id="customer-heading">Your roof replacement estimate</p>
 
     <div class="metric-grid">
@@ -563,6 +802,13 @@
       <p class="price-persq" id="c-persq">— per square</p>
       <p class="price-note">Includes all materials, labor, and cleanup · Final quote provided after roof inspection</p>
     </div>
+
+    <div class="disclaimer-row">
+      <p class="disclaimer-text">This is a ballpark estimate based on the dimensions you entered — your final price may vary depending on exact roof measurements, condition, and details found during inspection.</p>
+      <a class="disclaimer-btn" href="https://www.johnsonroofingaz.com" target="_blank">Schedule a Free Inspection</a>
+    </div>
+
+    <button class="print-btn" onclick="window.print()"><i class="ti ti-printer"></i> Print Estimate</button>
 
     <p class="cta-row">
       Questions? Call <strong>480-467-4572</strong> or visit <a href="https://johnsonroofingaz.com" target="_blank">johnsonroofingaz.com</a>
@@ -790,6 +1036,7 @@
     document.getElementById('b-sell-total').textContent = fmt(sellPrice);
 
     document.getElementById('jr-customer-results').classList.remove('hidden');
+    document.getElementById('wm-overlay').classList.add('visible');
     document.getElementById('jr-customer-results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     // Store the full estimate in memory so it can be saved on demand
@@ -888,19 +1135,61 @@
     }
   }
 
+  const INTERNAL_PASSWORD = '1121';
+  let internalUnlocked = false;
+
   function toggleInternal() {
     const panel = document.getElementById('jr-internal-panel');
     const icon = document.getElementById('toggle-icon');
     const isOpen = !panel.classList.contains('hidden');
+
     if (isOpen) {
       panel.classList.add('hidden');
       icon.classList.remove('open');
       document.getElementById('internal-toggle').setAttribute('aria-expanded', 'false');
-    } else {
+      return;
+    }
+
+    if (internalUnlocked) {
       panel.classList.remove('hidden');
       icon.classList.add('open');
       document.getElementById('internal-toggle').setAttribute('aria-expanded', 'true');
+      return;
     }
+
+    showPasswordModal();
+  }
+
+  function showPasswordModal() {
+    const overlay = document.getElementById('pw-overlay');
+    const input = document.getElementById('pw-input');
+    const error = document.getElementById('pw-error');
+    error.classList.add('hidden');
+    input.value = '';
+    overlay.classList.remove('hidden');
+    setTimeout(() => input.focus(), 50);
+  }
+
+  function submitPassword() {
+    const input = document.getElementById('pw-input');
+    const error = document.getElementById('pw-error');
+    if (input.value === INTERNAL_PASSWORD) {
+      internalUnlocked = true;
+      closePasswordModal();
+      const panel = document.getElementById('jr-internal-panel');
+      const icon = document.getElementById('toggle-icon');
+      panel.classList.remove('hidden');
+      icon.classList.add('open');
+      document.getElementById('internal-toggle').setAttribute('aria-expanded', 'true');
+    } else {
+      error.classList.remove('hidden');
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  function closePasswordModal() {
+    document.getElementById('pw-overlay').classList.add('hidden');
   }
 
   // Initialize saved count on page load
