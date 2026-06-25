@@ -734,6 +734,13 @@
   <div class="card">
     <div class="form-grid">
       <div class="field">
+        <label for="roof-type">Roof type</label>
+        <select id="roof-type" onchange="onRoofTypeChange()">
+          <option value="tile">Concrete Tile</option>
+          <option value="shingle">Asphalt Shingle</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="length">Length (ft)</label>
         <input type="number" id="length" placeholder="60" min="1" />
       </div>
@@ -759,7 +766,10 @@
     </div>
 
     <div class="assumptions">
-      <div class="assumption-row"><i class="ti ti-check"></i> Existing tile reused — only broken or damaged tiles replaced</div>
+      <div class="assumption-row" id="assumption-row">
+        <i class="ti ti-check"></i>
+        <span id="assumption-text">Existing tile reused — only broken or damaged tiles replaced</span>
+      </div>
     </div>
 
     <p id="jr-error" class="error-msg hidden"></p>
@@ -838,19 +848,32 @@
         <div class="int-metric"><p class="int-metric-lbl">Footprint</p><p class="int-metric-val" id="r-footprint">—</p></div>
         <div class="int-metric"><p class="int-metric-lbl">+Pitch +Waste</p><p class="int-metric-val" id="r-area">—</p></div>
         <div class="int-metric"><p class="int-metric-lbl">Total squares</p><p class="int-metric-val" id="r-squares">—</p></div>
-        <div class="int-metric"><p class="int-metric-lbl">Replace sq</p><p class="int-metric-val" id="r-replace">—</p></div>
-        <div class="int-metric"><p class="int-metric-lbl">Tile pallets</p><p class="int-metric-val" id="r-pallets">—</p></div>
+        <div class="int-metric tile-only"><p class="int-metric-lbl">Replace sq</p><p class="int-metric-val" id="r-replace">—</p></div>
+        <div class="int-metric tile-only"><p class="int-metric-lbl">Tile pallets</p><p class="int-metric-val" id="r-pallets">—</p></div>
+      </div>
+
+      <!-- TILE ONLY: 10% replacement cost -->
+      <div id="r-tile-section">
+        <hr class="divider" />
+        <p class="int-label">Tile cost (10% replacement)</p>
+        <div class="tile-row">
+          <div class="tile-line"><span>Concrete / clay tile</span><span id="r-tile-cost">—</span></div>
+          <p class="tile-detail" id="r-tile-detail"></p>
+        </div>
+      </div>
+
+      <!-- SHINGLE ONLY: full tear-off note -->
+      <div id="r-shingle-section" class="hidden">
+        <hr class="divider" />
+        <p class="int-label">Tear-off</p>
+        <div class="tile-row">
+          <div class="tile-line"><span>Full shingle tear-off</span><span id="r-shingle-tearoff">—</span></div>
+          <p class="tile-detail" id="r-shingle-detail"></p>
+        </div>
       </div>
 
       <hr class="divider" />
-      <p class="int-label">Tile cost (10% replacement)</p>
-      <div class="tile-row">
-        <div class="tile-line"><span>Concrete / clay tile</span><span id="r-tile-cost">—</span></div>
-        <p class="tile-detail" id="r-tile-detail"></p>
-      </div>
-
-      <hr class="divider" />
-      <p class="int-label">Accessories — ABC Supply pricing</p>
+      <p class="int-label" id="r-acc-label">Accessories — ABC Supply pricing</p>
       <table class="int-tbl">
         <thead>
           <tr><th>Item</th><th>Qty</th><th>Unit cost</th><th>Subtotal</th></tr>
@@ -869,7 +892,7 @@
       <div class="labor-row">
         <div>
           <p class="labor-label">Installation labor</p>
-          <p class="labor-note">$150.00 / sq · <span id="r-labor-sq">—</span> total squares</p>
+          <p class="labor-note" id="r-labor-note">$150.00 / sq · <span id="r-labor-sq">—</span> total squares</p>
         </div>
         <span id="r-labor-cost" style="font-size:13px;font-weight:700">—</span>
       </div>
@@ -884,7 +907,7 @@
         <div class="mrow total"><span>Estimated sell price</span><span id="b-sell-total">—</span></div>
       </div>
 
-      <p class="int-source">
+      <p class="int-source" id="r-source-note">
         Pricing: ABC Supply #2031782-2 · Valid through 1/29/2027 ·
         Drip edge avg $12.14/PC · Tile riser $10.98/PC ·
         10% tile replacement factor · Disposal $250 flat · Mortar balls $25 flat
@@ -926,10 +949,39 @@
     return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  // ── Roof type UI toggle ─────────────────────────────────────
+  function onRoofTypeChange() {
+    const type = document.getElementById('roof-type').value;
+    document.getElementById('assumption-text').textContent = type === 'shingle'
+      ? 'Full tear-off and replacement — existing shingles removed'
+      : 'Existing tile reused — only broken or damaged tiles replaced';
+  }
+
+  // ── Shingle materials — ABC Supply #2031782-2 · Valid 4/18/2026–1/29/2027 ──
+  function getShingleMaterials(squares, perimFt, L, W) {
+    const hipRidgeLF = Math.ceil(L * 2.0);   // estimated hip + ridge linear ft
+    return [
+      { n: 'OC Oakridge Shingles',               nt: '$48.73/BD · 3 bundles/sq · full replacement',            q: squares * 3,                                    u: 'BD',     c: 48.73    },
+      { n: 'Rhinoroof UDL Synthetic',            nt: '$85.77/RL · 10 SQ/roll',                                 q: Math.ceil(squares / 10),                        u: 'rolls',  c: 85.77    },
+      { n: 'OC Starter Strip Shingle',           nt: '$88.48/BD · 105 LF/bundle',                              q: Math.max(1, Math.ceil(perimFt / 105)),           u: 'BD',     c: 88.48    },
+      { n: 'OC ProEdge Hip & Ridge',             nt: '$104.26/BD · 33 LF/bundle',                              q: Math.max(1, Math.ceil(hipRidgeLF / 33)),         u: 'BD',     c: 104.26   },
+      { n: '2" Drip Edge (Verde 2X2)',           nt: '$10.23/PC · 10 ft pieces · full perimeter',              q: Math.ceil(perimFt / 10),                        u: 'pcs',    c: 10.23    },
+      { n: 'Coil Nails 1¼"',                    nt: '$66.05/BX · ~2 SQ/box',                                  q: Math.ceil(squares / 2),                         u: 'boxes',  c: 66.05    },
+      { n: 'Plastic Cap Nails 1"',               nt: '$21.66/BX · underlayment fastening',                     q: Math.ceil(squares / 4),                         u: 'boxes',  c: 21.66    },
+      { n: 'Galv Pipe Jacks (2" Cone Galv)',     nt: '$8.305/PC · penetrations',                               q: Math.max(2, Math.ceil(squares / 15)),            u: 'ea',     c: 8.305    },
+      { n: 'Shingle Mold (1x2)',                 nt: '$3.64/PC · 8 ft sticks · perimeter trim',               q: Math.max(1, Math.ceil(perimFt / 8)),            u: 'pcs',    c: 3.64     },
+      { n: 'SBS Tar',                            nt: '$85.37/ea · valleys, flashings & penetrations',          q: Math.max(1, Math.ceil(squares / 15)),            u: 'ea',     c: 85.37    },
+      { n: 'Spray Primer',                       nt: '$18.95/CN · metal prep before sealant',                  q: Math.max(1, Math.ceil(squares / 20)),            u: 'cans',   c: 18.95    },
+      { n: 'Disposal — full tear-off',           nt: 'Flat rate — shingle removal & haul-off',                 q: 1,                                              u: 'job',    c: 350.00   },
+    ];
+  }
+
+  // ── Main calculate function ──────────────────────────────────
   function calculate() {
     const err = document.getElementById('jr-error');
     err.classList.add('hidden');
 
+    const roofType = document.getElementById('roof-type').value; // 'tile' or 'shingle'
     const L = parseFloat(document.getElementById('length').value);
     const W = parseFloat(document.getElementById('width').value);
     const pitchEl = document.getElementById('pitch');
@@ -942,116 +994,156 @@
       return;
     }
 
+    // ── Shared geometry — unchanged for both roof types ────────
     const footprint = L * W;
-    const pitched = footprint * P;
-    const totalArea = pitched * 1.15; // 15% waste factor — applied silently, not shown to customer
-    const squares = Math.ceil(totalArea / 100);
-    const perimFt = (L + W) * 2;
+    const pitched   = footprint * P;
+    const totalArea = pitched * 1.15;           // 15% waste factor — silent
+    const squares   = Math.ceil(totalArea / 100);
+    const perimFt   = (L + W) * 2;
 
-    // Tile: 10% replacement only — existing tiles reused
-    const replaceSq = Math.ceil(squares * 0.10);
-    const pallets = Math.ceil(replaceSq / 3);
-    const tileCost = pallets * 375;
+    // ── Materials list — branch by roof type ──────────────────
+    let acc, matRaw, laborRaw;
 
-    // Averaged prices from ABC Supply list
-    const dripAvg = (7.469 + 9.504 + 8.998 + 10.373 + 10.516 + 12.463 + 18.81 + 18.81 + 14.31) / 9;
-    const riserAvg = 10.98;
+    if (roofType === 'tile') {
+      // ── CONCRETE TILE — original logic, untouched ──────────
+      const replaceSq = Math.ceil(squares * 0.10);
+      const pallets   = Math.ceil(replaceSq / 3);
+      const tileCost  = pallets * 375;
 
-    const acc = [
-      { n: 'Fontana G40 FG ASTM Underlayment',    nt: '$48.00/RL · 2 SQ/roll',           q: Math.ceil(squares / 2),                         u: 'rolls',  c: 48.00 },
-      { n: '4" Tile Nails',                        nt: '$81.75/BX · 50 lb box',            q: Math.ceil(squares / 3),                         u: 'boxes',  c: 81.75 },
-      { n: '1×2×4\' Furring Strips (battens)',     nt: '$19.00/PC · ~3 per square',        q: Math.ceil(squares * 3),                         u: 'pcs',    c: 19.00 },
-      { n: 'Verde Birdstop Painted',               nt: '$11.77/PC · per 4 LF of eave',    q: Math.max(1, Math.ceil((L + W) / 4)),            u: 'pcs',    c: 11.77 },
-      { n: 'Drip Edge — Verde avg all sizes',      nt: '$' + dripAvg.toFixed(2) + '/PC · 10 ft pieces', q: Math.ceil(perimFt / 10),           u: 'pcs',    c: dripAvg },
-      { n: 'Tile Riser — Verde Painted',           nt: '$' + riserAvg.toFixed(2) + '/PC', q: Math.max(1, Math.ceil(squares / 10)),           u: 'pcs',    c: riserAvg },
-      { n: 'Verde 2.0" Cone Flashing Alum',        nt: '$34.98/PC · pipe boots',           q: Math.max(2, Math.ceil(squares / 15)),           u: 'pcs',    c: 34.9803 },
-      { n: 'Verde Weatherblock Hip-S P10/20',      nt: '$30.00/BD',                        q: Math.max(1, Math.ceil(Math.ceil(L * 0.15) / 20)), u: 'BD',   c: 30.00 },
-      { n: 'Verde Weatherblock Rdg-S P25',         nt: '$60.00/BD',                        q: Math.max(1, Math.ceil(Math.ceil(L * 0.10) / 25)), u: 'BD',   c: 60.00 },
-      { n: 'ABC Plastic Cap Nails 1"',             nt: '$20.00/BX · underlayment',         q: Math.ceil(squares / 4),                         u: 'boxes',  c: 20.00 },
-      { n: 'Sikaflex 1A Caulk',                   nt: '$9.99/tube',                        q: Math.max(1, Math.ceil(squares / 10)),           u: 'tubes',  c: 9.99 },
-      { n: 'Disposal fees',                        nt: 'Flat rate — debris removal & haul-off', q: 1,                                          u: 'job',    c: 250.00 },
-      { n: 'Mortar balls',                         nt: 'Flat rate — hip & ridge mortar',    q: 1,                                              u: 'job',    c: 25.00 },
-    ];
+      const dripAvg  = (7.469 + 9.504 + 8.998 + 10.373 + 10.516 + 12.463 + 18.81 + 18.81 + 14.31) / 9;
+      const riserAvg = 10.98;
 
-    let accTotal = 0;
-    const tbody = document.getElementById('r-mat-body');
-    tbody.innerHTML = '';
-    acc.forEach(m => {
-      const sub = m.q * m.c;
-      accTotal += sub;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${m.n}<span class="note">${m.nt}</span></td><td>${m.q} ${m.u}</td><td>${fmt(m.c)}</td><td>${fmt(sub)}</td>`;
-      tbody.appendChild(tr);
-    });
+      acc = [
+        { n: 'Fontana G40 FG ASTM Underlayment',  nt: '$48.00/RL · 2 SQ/roll',                           q: Math.ceil(squares / 2),                           u: 'rolls',  c: 48.00     },
+        { n: '4" Tile Nails',                      nt: '$81.75/BX · 50 lb box',                           q: Math.ceil(squares / 3),                           u: 'boxes',  c: 81.75     },
+        { n: '1×2×4\' Furring Strips (battens)',   nt: '$19.00/PC · ~3 per square',                       q: Math.ceil(squares * 3),                           u: 'pcs',    c: 19.00     },
+        { n: 'Verde Birdstop Painted',             nt: '$11.77/PC · per 4 LF of eave',                    q: Math.max(1, Math.ceil((L + W) / 4)),              u: 'pcs',    c: 11.77     },
+        { n: 'Drip Edge — Verde avg all sizes',    nt: '$' + dripAvg.toFixed(2) + '/PC · 10 ft pieces',   q: Math.ceil(perimFt / 10),                          u: 'pcs',    c: dripAvg   },
+        { n: 'Tile Riser — Verde Painted',         nt: '$' + riserAvg.toFixed(2) + '/PC',                 q: Math.max(1, Math.ceil(squares / 10)),             u: 'pcs',    c: riserAvg  },
+        { n: 'Verde 2.0" Cone Flashing Alum',      nt: '$34.98/PC · pipe boots',                          q: Math.max(2, Math.ceil(squares / 15)),             u: 'pcs',    c: 34.9803   },
+        { n: 'Verde Weatherblock Hip-S P10/20',    nt: '$30.00/BD',                                       q: Math.max(1, Math.ceil(Math.ceil(L * 0.15) / 20)), u: 'BD',     c: 30.00     },
+        { n: 'Verde Weatherblock Rdg-S P25',       nt: '$60.00/BD',                                       q: Math.max(1, Math.ceil(Math.ceil(L * 0.10) / 25)), u: 'BD',     c: 60.00     },
+        { n: 'ABC Plastic Cap Nails 1"',           nt: '$20.00/BX · underlayment',                        q: Math.ceil(squares / 4),                           u: 'boxes',  c: 20.00     },
+        { n: 'Sikaflex 1A Caulk',                  nt: '$9.99/tube',                                      q: Math.max(1, Math.ceil(squares / 10)),             u: 'tubes',  c: 9.99      },
+        { n: 'Disposal fees',                      nt: 'Flat rate — debris removal & haul-off',           q: 1,                                                u: 'job',    c: 250.00    },
+        { n: 'Mortar balls',                       nt: 'Flat rate — hip & ridge mortar',                  q: 1,                                                u: 'job',    c: 25.00     },
+      ];
 
-    const matRaw = tileCost + accTotal;
-    const laborRaw = squares * 150;
-    const matSell = matRaw / (1 - 0.39);
-    const labSell = laborRaw / (1 - 0.46);
+      let accTotal = 0;
+      const tbody = document.getElementById('r-mat-body');
+      tbody.innerHTML = '';
+      acc.forEach(m => {
+        const sub = m.q * m.c; accTotal += sub;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${m.n}<span class="note">${m.nt}</span></td><td>${m.q} ${m.u}</td><td>${fmt(m.c)}</td><td>${fmt(sub)}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      matRaw   = tileCost + accTotal;
+      laborRaw = squares * 150;
+
+      // Internal — tile-specific fields
+      document.getElementById('r-tile-section').classList.remove('hidden');
+      document.getElementById('r-shingle-section').classList.add('hidden');
+      document.querySelectorAll('.tile-only').forEach(el => el.classList.remove('hidden'));
+      document.getElementById('r-replace').textContent  = replaceSq + ' sq';
+      document.getElementById('r-pallets').textContent  = pallets;
+      document.getElementById('r-tile-cost').textContent = fmt(tileCost);
+      document.getElementById('r-tile-detail').textContent =
+        replaceSq + ' sq (10% of ' + squares + ') → ' + pallets + ' pallet' + (pallets !== 1 ? 's' : '') +
+        ' @ $375 = ' + fmt(tileCost) + '  ·  ' + (squares - replaceSq) + ' sq reused from existing tile';
+      document.getElementById('r-labor-note').innerHTML  = '$150.00 / sq · <span id="r-labor-sq">' + squares + '</span> total squares';
+      document.getElementById('r-acc-label').textContent = 'Accessories — ABC Supply pricing (tile)';
+      document.getElementById('r-source-note').textContent =
+        'Pricing: ABC Supply #2031782-2 · Valid through 1/29/2027 · Drip edge avg $12.14/PC · Tile riser $10.98/PC · 10% tile replacement factor · Disposal $250 flat · Mortar balls $25 flat';
+
+    } else {
+      // ── ASPHALT SHINGLE — new logic ────────────────────────
+      acc = getShingleMaterials(squares, perimFt, L, W);
+
+      let accTotal = 0;
+      const tbody = document.getElementById('r-mat-body');
+      tbody.innerHTML = '';
+      acc.forEach(m => {
+        const sub = m.q * m.c; accTotal += sub;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${m.n}<span class="note">${m.nt}</span></td><td>${m.q} ${m.u}</td><td>${fmt(m.c)}</td><td>${fmt(sub)}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      matRaw   = accTotal;                    // no separate tile cost — shingles are in the list
+      laborRaw = squares * 67.50;             // shingle labor rate
+
+      // Internal — shingle-specific fields
+      document.getElementById('r-tile-section').classList.add('hidden');
+      document.getElementById('r-shingle-section').classList.remove('hidden');
+      document.querySelectorAll('.tile-only').forEach(el => el.classList.add('hidden'));
+      document.getElementById('r-shingle-tearoff').textContent = squares + ' sq full tear-off';
+      document.getElementById('r-shingle-detail').textContent  =
+        'All ' + squares + ' sq removed · includes pitch + 15% waste · $67.50/sq labor';
+      document.getElementById('r-labor-note').innerHTML  = '$67.50 / sq · <span id="r-labor-sq">' + squares + '</span> total squares';
+      document.getElementById('r-acc-label').textContent = 'Materials — ABC Supply pricing (shingle)';
+      document.getElementById('r-source-note').textContent =
+        'OC Oakridge shingles · Rhinoroof underlayment · ABC Supply pricing — UPDATE prices before use · Disposal $350 flat · Labor $67.50/sq raw';
+    }
+
+    // ── Shared margin calculation — unchanged ─────────────────
+    const matSell  = matRaw  / (1 - 0.39);   // 39% materials margin
+    const labSell  = laborRaw / (1 - 0.46);  // 46% labor margin
     const sellPrice = Math.round(matSell + labSell);
-    const perSq = Math.round(sellPrice / squares);
+    const perSq     = Math.round(sellPrice / squares);
 
-    // Personalize heading
+    // ── Personalize heading ───────────────────────────────────
     const firstName = document.getElementById('first-name').value.trim();
-    const lastName = document.getElementById('last-name').value.trim();
-    const fullName = [firstName, lastName].filter(Boolean).join(' ');
+    const lastName  = document.getElementById('last-name').value.trim();
+    const fullName  = [firstName, lastName].filter(Boolean).join(' ');
     document.getElementById('customer-heading').textContent = fullName
       ? `${fullName}'s roof replacement estimate`
       : 'Your roof replacement estimate';
 
-    const phone = document.getElementById('phone').value.trim();
-    const email = document.getElementById('email').value.trim();
+    const phone   = document.getElementById('phone').value.trim();
+    const email   = document.getElementById('email').value.trim();
     const address = document.getElementById('address').value.trim();
     const homeAge = document.getElementById('home-age').value.trim();
 
-    // Customer view
-    document.getElementById('c-area').textContent = Math.round(totalArea).toLocaleString() + ' sq ft';
+    // ── Customer view ────────────────────────────────────────
+    document.getElementById('c-area').textContent    = Math.round(totalArea).toLocaleString() + ' sq ft';
     document.getElementById('c-squares').textContent = squares + ' sq';
-    document.getElementById('c-pitch').textContent = pitchLabel.split('(')[0].trim();
-    document.getElementById('c-price').textContent = fmt(sellPrice);
-    document.getElementById('c-persq').textContent = fmt(perSq) + ' per square';
+    document.getElementById('c-pitch').textContent   = pitchLabel.split('(')[0].trim();
+    document.getElementById('c-price').textContent   = fmt(sellPrice);
+    document.getElementById('c-persq').textContent   = fmt(perSq) + ' per square';
 
-    // Internal view
-    document.getElementById('r-name').textContent = fullName || '—';
-    document.getElementById('r-phone').textContent = phone || '—';
-    document.getElementById('r-email').textContent = email || '—';
-    document.getElementById('r-address').textContent = address || '—';
-    document.getElementById('r-home-age').textContent = homeAge ? homeAge + ' yrs' : '—';
+    // ── Internal shared fields ───────────────────────────────
+    document.getElementById('r-name').textContent     = fullName || '—';
+    document.getElementById('r-phone').textContent    = phone    || '—';
+    document.getElementById('r-email').textContent    = email    || '—';
+    document.getElementById('r-address').textContent  = address  || '—';
+    document.getElementById('r-home-age').textContent = homeAge  ? homeAge + ' yrs' : '—';
     document.getElementById('r-footprint').textContent = Math.round(footprint).toLocaleString() + ' sq ft';
-    document.getElementById('r-area').textContent = Math.round(totalArea).toLocaleString() + ' sq ft';
-    document.getElementById('r-squares').textContent = squares + ' sq';
-    document.getElementById('r-replace').textContent = replaceSq + ' sq';
-    document.getElementById('r-pallets').textContent = pallets;
-    document.getElementById('r-tile-cost').textContent = fmt(tileCost);
-    document.getElementById('r-tile-detail').textContent =
-      replaceSq + ' sq (10% of ' + squares + ') → ' + pallets + ' pallet' + (pallets !== 1 ? 's' : '') +
-      ' @ $375 = ' + fmt(tileCost) + '  ·  ' + (squares - replaceSq) + ' sq reused from existing tile';
+    document.getElementById('r-area').textContent      = Math.round(totalArea).toLocaleString() + ' sq ft';
+    document.getElementById('r-squares').textContent   = squares + ' sq';
     document.getElementById('r-mat-total').textContent = fmt(matRaw);
-    document.getElementById('r-labor-sq').textContent = squares;
     document.getElementById('r-labor-cost').textContent = fmt(laborRaw);
-    document.getElementById('b-mat-raw').textContent = fmt(matRaw);
-    document.getElementById('b-mat-sell').textContent = fmt(matSell);
-    document.getElementById('b-lab-raw').textContent = fmt(laborRaw);
-    document.getElementById('b-lab-sell').textContent = fmt(labSell);
+    document.getElementById('b-mat-raw').textContent   = fmt(matRaw);
+    document.getElementById('b-mat-sell').textContent  = fmt(matSell);
+    document.getElementById('b-lab-raw').textContent   = fmt(laborRaw);
+    document.getElementById('b-lab-sell').textContent  = fmt(labSell);
     document.getElementById('b-sell-total').textContent = fmt(sellPrice);
 
     document.getElementById('jr-customer-results').classList.remove('hidden');
     document.getElementById('wm-overlay').classList.add('visible');
     document.getElementById('jr-customer-results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-    // Store the full estimate in memory so it can be saved on demand
     window.lastEstimate = {
+      roofType,
       firstName, lastName, fullName, phone, email, address, homeAge,
       length: L, width: W, pitch: pitchLabel.split('(')[0].trim(),
       footprintSqFt: Math.round(footprint),
       totalAreaSqFt: Math.round(totalArea),
       totalSquares: squares,
-      replacementSquares: replaceSq,
-      tilePallets: pallets,
       rawMaterials: Math.round(matRaw * 100) / 100,
       rawLabor: laborRaw,
-      sellPrice: sellPrice,
-      perSquare: perSq,
+      sellPrice, perSquare: perSq,
       savedAt: new Date().toISOString()
     };
     document.getElementById('save-status').classList.add('hidden');
